@@ -56,6 +56,8 @@ Secondary goals include making note of key information which is missing and pres
 ## Future Goals
   The only thing that comes to mind immediately is to further divide the data into those orders which can be definitively matched with SKUs, by matching visitid, fullvisitorid and price. An initial attempt at this only established a handful results, with some of those possibly being in error or duplicates.
 
+  Also, I opted avoid mixing the data from all_sessions and analytics as much as possible, since the data is either from different sources or processes, avoiding contamination was deemed best. Finding a way around that, or cautiously doing so while maintaining an accurate archive and clear markers for data origins would be good. 
+
   Also, future-proofing data collection, requesting the data missing regarding purchases, establishing a way of generating visitids that does not rely on the start-time of the visit.
 
 
