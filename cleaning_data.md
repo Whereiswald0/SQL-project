@@ -237,36 +237,83 @@ This result goes along with the common english reading of the different between 
 
 Thus, 'total_ordered' will be discarded and we will incorporate the other columns into a supply_levels table.
 
+The main issue here is how to handle the SKUs pulled from clean_sessions which do not correspond to items in the products table. 
 
-
-
+Here I have elected to omit them, rather than cluttering the table with NULLs, as the missing data is absent at the business level. 
+~~~sql
+CREATE TABLE supply_levels AS 
+SELECT 
+	pi.productsku,
+	pi.productname,
+	p.ordered_quantity,
+	p.stock_level,
+	p.restocking_lead_time,
+	p.sentiment_score,
+	p.sentiment_magnitude
+FROM products_1 pi		--this is the temporary name before the original products table (imported directly from csv) is archived
+JOIN products p
+	ON pi.productsku = p.productsku --results in 1092 rows
 ~~~~
+This is the expected result in terms of number of rows.
+
 The rough part was trying to sort out the categories and skus, since there were a LOT of varieties associated with a single sku through the all_sessions table.
-What I ended up doing was iterating between a temp table, viewing it, running it back through with a different REPLACE or TRIM function targeting a specific duplicate, or DELETE on a specific field, and saving my progress by incrementing the name.
+
+~~~sql
+SELECT DISTINCT productsku, product_category
+FROM clean_sessions --1537 results
+
+SELECT DISTINCT product_category
+FROM clean_sessions --74 results
+~~~
+These results show 1,537 unique pairs of sku-category across 74 unique categories.
+
+What I ended up doing was iterating between a temp table, viewing it, running it back through with a different REPLACE or TRIM function targeting a specific duplicate, or DELETE on a specific field, or most often using an 'UPDATE, SET, WHERE' block to mass simplify several entries, and saving my progress by incrementing the name.
 
 This was not fun.
 Here is a scrap of it I saved. Was probably not worth the effort.
-Finally just created a 'categories' table with the results of my last iteration. For some reason I started working from the top at one point, but my workflow was good.
+Finally just created a 'categories' table with the results of my last iteration. For some reason I started working from the top at one point, but my workflow itself was good.
 ~~~~sql
+--cat4 is save
+
 CREATE TABLE categories AS
-SELECT DISTINCT 
+SELECT DISTINCT *
+FROM cat12
+ORDER BY productsku
+
+CREATE TEMP TABLE cat12 AS
+SELECT 
 	productsku, 
-	REPLACE(product_category,'Lifestyle/','') product_category
-FROM prod15
+	REPLACE(product_category,'${escCatTitle}','N/A') product_category
+FROM cat11
+
+SELECT DISTINCT *
+FROM cat12
+ORDER BY productsku
+
+UPDATE cat7
+SET product_category = ''
+WHERE product_category ILIKE '%BrandsAndroid%'
+
+DELETE FROM cat12
+WHERE product_category = ''
+
+SELECT DISTINCT productsku, product_category, 
+COUNT(product_category) OVER (PARTITION BY productsku) countp
+FROM cat12
+GROUP BY productsku, product_category
 ORDER BY productsku
 
 SELECT DISTINCT *
-FROM prod15
+FROM cat12
+WHERE productsku = 'GGOEACCQ017299'
 ORDER BY productsku
 
-UPDATE prod15
-SET product_category = 'Accessories'
-WHERE productsku = 'GGOEGAAX0213'
+UPDATE cat12
+SET product_category = 'Housewares'
+WHERE productsku = 'GGOEACCQ017299'
 
-DELETE FROM prod15
-WHERE product_category IN ('(notset)')
-
-SELECT *
-FROM products
-WHERE productsku = 'GGOEAOCB077499'
+SELECT productname
+FROM clean_sessions
+WHERE productsku = 'GGOEACCQ017299'
 ~~~~
+Certain choices here were made which I was not the most comfortable with, but in the end I decided to value clarity and simplified many categories
