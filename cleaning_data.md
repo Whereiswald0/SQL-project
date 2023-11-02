@@ -14,7 +14,7 @@ CREATE TEMP TABLE clean_analytics AS (
 SELECT 
 	DISTINCT visitid AS sessionid, --distinct is called to reduce the number of duplicates, visitid renamed to sessionid to try to differenciate from other fields
 	TO_TIMESTAMP(visitid) AS visit_date, --since visitid is generated from the users timestamp (which can be seen when comparing this cast to the date), a more       
-	(CASE WHEN timeonsite IS NULL THEN '00:00:00'                                                                       accurate time can be generated this way
+	(CASE WHEN timeonsite IS NULL THEN '00:00:00'                                                                     --accurate time can be generated this way
 	ELSE timeonsite END) timeonsite, 
 	visitnumber,
 	fullvisitorid AS visitorid, --fullvisitorid was a bit unwieldly, since visitid was changed to session ID, dropped the 'full'.
