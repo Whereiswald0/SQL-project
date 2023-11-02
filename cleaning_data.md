@@ -316,4 +316,10 @@ SELECT productname
 FROM clean_sessions
 WHERE productsku = 'GGOEACCQ017299'
 ~~~~
-Certain choices here were made which I was not the most comfortable with, but in the end I decided to value clarity and simplified many categories
+Certain choices here were made which I was not the most comfortable with, but in the end I decided to value clarity and simplified many categories.
+
+Three tables assembled so far:
+	products: paired SKUs and Product Names
+ 	supply_levels: values associated with 
+  	categories:
+	
