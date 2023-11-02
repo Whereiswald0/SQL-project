@@ -319,7 +319,16 @@ WHERE productsku = 'GGOEACCQ017299'
 Certain choices here were made which I was not the most comfortable with, but in the end I decided to value clarity and simplified many categories.
 
 Three tables assembled so far:
+	clean_sessions: cleaned data from all_sessions, formatted to force some degree of normalization
+ 	clean_analytics: ^ for analytics
 	products: paired SKUs and Product Names
  	supply_levels: values associated with those SKUs
   	categories: an attempt to associate categories listed in all_sessions with a single sku (this was mostly a failure and should not be used until further data is attained)
-	
+
+The last three are well set enough, but clean_sessions and clean_analytics should be examined more closely. 
+
+We established that within the data given there is not a good candidate for a PK for either analytics or all_sessions. This is due to fullvisitorids being associated with multiple sessions and sessionid (the re-title visitid) being generated from the timestamp of login, which means two users could generate the same sessionid if they logged in at the same time. 
+
+If we wanted to generate a table of all visitors, that would be possible, but the data we could associate with each user would not necessarily fit the use-value of a dedicated seperate table. At this stage I would not be comfortable trying to merge 
+
+My proposal would be to make use of the 
