@@ -44,9 +44,9 @@ CREATE TEMP TABLE clean_sessions AS
 	 ELSE country END),
 	city,
 	(CASE WHEN timeonsite IS NULL THEN '0'
-	ELSE TO_CHAR((timeonsite || ' second')::interval, 'HH24:MI:SS') END) AS timeonsite, --this is a better way to do time on site, if I didn't switch it on analytics
-	pageviews,                                                                                                                                      I should
-	type exec_type, --since type is a keyword, felt that changing it would be a good idea
+	ELSE TO_CHAR((timeonsite || ' second')::interval, 'HH24:MI:SS') END) AS timeonsite, --this is a better way to do time on site, 
+	pageviews,                                                                         -- if I didn't switch it on analytics I should
+	type exec_type, 					--since type is a keyword, felt that changing it would be a good idea
 	(CASE WHEN productQuantity IS NULL THEN '0' --CASE used to reduce nulls
 	ELSE productQuantity END) AS product_quantity,
 	(CASE WHEN productPrice IS NULL THEN '0'
@@ -72,4 +72,4 @@ CREATE TEMP TABLE clean_sessions AS
 FROM all_sessions
 ORDER BY visitid DESC
 )
-
+~~~~
