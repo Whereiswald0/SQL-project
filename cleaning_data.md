@@ -73,3 +73,60 @@ FROM all_sessions
 ORDER BY visitid DESC
 )
 ~~~~
+Regarding products and product related tables:
+				
+products - 7 columns, 1092 rows, each has unique productsku, nulls in sentiment_score and sentiment_magnitude
+sales_by_sku - 2 columns, 462 rows, each unique with productsku and total_ordered
+sales_report - 8 columns, match products except also has 'ratio'
+				454 rows, each unique, contained in sales_by_sku AND duplicates with products, 
+				FULL OUTER JOINING with products does not increase the number of rows so details match
+				RE: the 8 extra SKUs in sales_by_sku NOT IN prodcuts or sales_report
+				ONE of these skus matches a sale in the all_sessions and so must be included
+				
+Cleaning products, sales_by_sku and sales_report was MUCH more straightforward, the only sticking point being that sales_by_sku contains 8 additional skus
+
+~~~~sql
+SELECT s.productsku, s.total_ordered, sr.total_ordered	--shows that both tables match on total ordered, except for the 8 extra from sales_by_sku
+FROM sales_by_sku s					--running again with the commented line in confirms that details are the same, no rows added
+FULL OUTER JOIN sales_report sr
+	ON sr.productsku = s.productsku
+--WHERE sr.total_ordered <> s.total_ordered
+
+SELECT p.productsku, p.productname, sr.productname 	-- also, sku and name match across products and sales_report
+FROM products p
+JOIN sales_report sr
+	ON sr.productsku = p.productsku
+--WHERE sr.productname <> p.productname
+
+~~~~
+Adding in the SKUs listed in the cleaned up all_sessions 
+
+The rough part was trying to sort out the categories and skus, since there were a LOT of varieties associated with a single sku through the all_sessions table.
+What I ended up doing was iterating between a temp table, viewing it, running it back through with a different REPLACE or TRIM function targeting a specific duplicate, or DELETE on a specific field, and saving my progress by incrementing the name.
+
+This was not fun.
+Here is a scrap of it I saved. Was probably not worth the effort.
+Finally just created a 'categories' table with the results of my last iteration. For some reason I started working from the top at one point, but my workflow was good.
+~~~~sql
+CREATE TABLE categories AS
+SELECT DISTINCT 
+	productsku, 
+	REPLACE(product_category,'Lifestyle/','') product_category
+FROM prod15
+ORDER BY productsku
+
+SELECT DISTINCT *
+FROM prod15
+ORDER BY productsku
+
+UPDATE prod15
+SET product_category = 'Accessories'
+WHERE productsku = 'GGOEGAAX0213'
+
+DELETE FROM prod15
+WHERE product_category IN ('(notset)')
+
+SELECT *
+FROM products
+WHERE productsku = 'GGOEAOCB077499'
+~~~~
