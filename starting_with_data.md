@@ -1,4 +1,4 @@
-Question 1: Over which dates were orders placed.
+Question 1: Over which dates were orders placed? Which months?
 
 SQL Queries:
 
@@ -6,7 +6,7 @@ Answer:
 
 
 
-Question 2: When vistors return, are they more likely to make a purchase
+Question 2: When vistors return, are they more likely to make a purchase?
 
 SQL Queries:
 
