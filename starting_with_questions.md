@@ -179,12 +179,64 @@ Since the US is the largest customer center, the most data is from here. Hard to
 
 **Question 5: Can we summarize the impact of revenue generated from each city/country?**
 
+Again, we must define away any ambiguities in the question.
+The impact of revenue can be understood in many ways, but mostly with regards to the business goals.
+Here we can say that the revenue generated in the US obviously means that that is where the biggest existing customer base is. Does that mean that efforts should be made to grow there? Or is the business at it's cap in the US and should be looking for opportunities elsewhere?
+
+What we can do is generate indications of sales numbers from the data
+
 SQL Queries:
 
+~~~~sql
+--returning to our query from the 1st question
+CREATE VIEW sales_by_city AS (
+SELECT 
+	se.city, 
+	a.units_sold,
+	a.unit_price
+FROM order_sessions a
+JOIN session_view se
+	ON a.visitorid = se.visitorid
+WHERE a.units_sold > 0
+)
+--call that view within a query that finds total sold and groups by city
+SELECT 
+	se.city,
+	SUM(se.units_sold*se.unit_price) total_sold
+FROM session_view se
+JOIN sales_by_city s
+	ON se.city = s.city
+WHERE se.units_sold > 0
+GROUP BY se.city
+ORDER BY total_sold DESC
+~~~~
+And for countries
+~~~~sql
+CREATE VIEW sales_by_country AS (
+SELECT 
+	se.country, 
+	a.units_sold,
+	a.unit_price
+FROM order_sessions a
+JOIN session_view se
+	ON a.visitorid = se.visitorid
+WHERE a.units_sold > 0
+)
 
-
+SELECT 
+	se.country,
+	SUM(se.units_sold*se.unit_price) total_sold
+FROM session_view se
+JOIN sales_by_country s
+	ON se.country = s.country
+WHERE se.units_sold > 0
+GROUP BY se.country
+ORDER BY total_sold DESC
+~~~~
 Answer:
+Any number of things could be shown by this data, without further context we would only be guessing.
 
+Data without context can tell us only so much.
 
 
 
