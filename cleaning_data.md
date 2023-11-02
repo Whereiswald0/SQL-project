@@ -11,8 +11,8 @@ Below, provide the SQL queries you used to clean your data.
 --first, generate a temp table of all fields in the analytics csv
 ~~~sql
 CREATE TEMP TABLE clean_analytics AS (
-SELECT 
-	DISTINCT visitid AS sessionid, --distinct is called to reduce the number of duplicates, visitid renamed to sessionid to try to differenciate from other fields
+SELECT DISTINCT			
+	visitid AS sessionid, --visitid renamed to sessionid to try to differenciate from other column headers
 	TO_TIMESTAMP(visitid) AS visit_date, --since visitid is generated from the users timestamp (which can be seen when comparing this cast to the date), a more       
 	(CASE WHEN timeonsite IS NULL THEN '00:00:00'                                                                     --accurate time can be generated this way
 	ELSE timeonsite END) timeonsite, 
@@ -31,7 +31,8 @@ SELECT
 FROM analytics
 ORDER BY sessionid)
 ~~~~
-Call this whole table, examine the results, then move on to all_sessions. 32 columns, lots of data
+Call this whole table, examine the results checking for missed nulls, unusual looking information, etc.
+Then move on to all_sessions. 32 columns, lots of data.
 ~~~sql
 CREATE TEMP TABLE clean_sessions AS
 (
@@ -90,15 +91,57 @@ SELECT s.productsku, s.total_ordered, sr.total_ordered	--shows that both tables 
 FROM sales_by_sku s					--running again with the commented line in confirms that details are the same, no rows added
 FULL OUTER JOIN sales_report sr
 	ON sr.productsku = s.productsku
---WHERE sr.total_ordered <> s.total_ordered
+--WHERE sr.total_ordered <> s.total_ordered  		--this commented-out line can be deployed to poll results where the total_ordered does not match
 
 SELECT p.productsku, p.productname, sr.productname 	-- also, sku and name match across products and sales_report
 FROM products p
 JOIN sales_report sr
 	ON sr.productsku = p.productsku
---WHERE sr.productname <> p.productname
+--WHERE sr.productname <> p.productname			--this commented-out line can be deployed to poll results where the total_ordered does not match
+~~~~
+
+~~~~sql
+SELECT DISTINCT productsku
+FROM products		--returns 1092
+
+SELECT productsku, productname
+FROM products 		--returns 1092
+
+SELECT DISTINCT productsku
+FROM clean_sessions 	--returns 536
+
+SELECT DISTINCT p.productsku
+FROM products p
+FULL OUTER JOIN clean_sessions se
+	ON p.productsku = se.productsku		--returns 1093
+
+SELECT DISTINCT productsku, productname
+FROM sales_report
+WHERE productsku NOT IN (
+SELECT DISTINCT p.productsku
+FROM products p
+) 						--zero results
+
+SELECT DISTINCT productsku--, productname --commented out since productnames do not appear in sales by sku
+FROM sales_by_sku
+WHERE productsku NOT IN (
+SELECT DISTINCT p.productsku
+FROM products p
+) 						--8 results
 
 ~~~~
+These queries show that there is 1:1 overlap of productskus between the products and sales_report tables, while the cleaned sessions data produces one anomoly and the sales_by_sku produces 8. Thus the total numerber of SKUs we should be looking for is 1100.
+Creating a list of all skus used in all data looks like:
+~~~~sql
+CREATE VIEW all_skus AS
+(SELECT productsku
+FROM sales_by_sku
+UNION
+SELECT productsku
+FROM products)
+~~~~
+This view can then be used to create a table matching the data contained in the 
+
 Adding in the SKUs listed in the cleaned up all_sessions 
 
 The rough part was trying to sort out the categories and skus, since there were a LOT of varieties associated with a single sku through the all_sessions table.
