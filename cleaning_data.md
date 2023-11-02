@@ -320,6 +320,6 @@ Certain choices here were made which I was not the most comfortable with, but in
 
 Three tables assembled so far:
 	products: paired SKUs and Product Names
- 	supply_levels: values associated with 
-  	categories:
+ 	supply_levels: values associated with those SKUs
+  	categories: an attempt to associate categories listed in all_sessions with a single sku (this was mostly a failure and should not be used until further data is attained)
 	
