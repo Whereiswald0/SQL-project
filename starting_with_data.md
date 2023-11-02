@@ -17,6 +17,7 @@ Answer:
 Question 3: Are frequent visitors better customers?
 
 SQL Queries:
+~~~~sql
 SELECT DISTINCT 
 	a.visitorid,
 	MAX(a.visitnumber)high_visit,
@@ -24,6 +25,7 @@ SELECT DISTINCT
 FROM clean_analytics a
 GROUP BY a.visitorid
 ORDER BY high_visit DESC
+~~~~
 Answer:
 
 
