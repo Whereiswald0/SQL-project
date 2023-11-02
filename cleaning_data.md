@@ -329,6 +329,84 @@ The last three are well set enough, but clean_sessions and clean_analytics shoul
 
 We established that within the data given there is not a good candidate for a PK for either analytics or all_sessions. This is due to fullvisitorids being associated with multiple sessions and sessionid (the re-title visitid) being generated from the timestamp of login, which means two users could generate the same sessionid if they logged in at the same time. 
 
-If we wanted to generate a table of all visitors, that would be possible, but the data we could associate with each user would not necessarily fit the use-value of a dedicated seperate table. At this stage I would not be comfortable trying to merge 
+If we wanted to generate a table of all visitors, that would be possible, but the data we could associate with each user would not necessarily fit the use-value of a dedicated seperate table. At this stage I would not be comfortable trying to merge the data from all_sessions and analytics. This will be explicated further in the QA section. The final transformation to the cleaned session and analytics tables will just be to append a 'visit_key' where applicable, with the understand that future data might be added to fix some of the holes present.
 
-My proposal would be to make use of the 
+Code to generate revised tables:
+~~~~sql
+CREATE TABLE sessions AS
+SELECT DISTINCT 
+	(CASE WHEN u.visit_key IS NOT NULL THEN u.visit_key
+	 ELSE 'N/A' END) visit_key,
+	se.sessionid,
+	se.visitorid,
+	se.visit_date,
+	country,
+	(CASE WHEN city = 'not available in demo dataset' THEN 'N/A'
+	 WHEN city IS NULL THEN 'N/A'
+	 ELSE city END) city,
+	(CASE WHEN se.timeonsite = '0' THEN 'N/A'
+	 ELSE se.timeonsite END) timeonsite,
+	pageviews,
+	pagetitle,
+	page_path_level,
+	(CASE WHEN  a.channelgrouping IS NULL THEN 'N/A'
+	ELSE  a.channelgrouping END) channelgrouping,
+	(CASE WHEN socialengagementtype IS NULL THEN 'N/A'
+	ELSE socialengagementtype END) socialengagementtype,
+	(CASE WHEN product_quantity IS NULL THEN '0'
+	ELSE product_quantity END) units_sold,
+	(CASE WHEN se.unit_price IS NULL THEN 0
+	ELSE se.unit_price END) unit_price,
+	(CASE WHEN se.product_revenue IS NULL THEN '0'
+	ELSE se.product_revenue END) revenue,
+	(CASE WHEN transaction_revenue IS NULL THEN 0
+	ELSE transaction_revenue END) transaction_revenue,
+	(CASE WHEN se.productsku IS NULL THEN 'N/A'
+	ELSE se.productsku END) productsku,
+	(CASE WHEN c.product_category IS NOT NULL THEN c.product_category
+	ELSE 'N/A' END) product_category,
+	(CASE WHEN bounces IS NULL THEN 0
+	ELSE bounces END) bounces,
+	exec_type,
+	ecommerceaction_type,
+	ecommerceaction_step,
+	ecommerceaction_option
+FROM clean_sessions se
+LEFT JOIN users u
+	ON se.sessionid = u.sessionid
+	AND
+	se.visitorid = u.visitorid
+LEFT JOIN analytics a
+	ON se.sessionid = a.sessionid
+	AND
+	se.visitorid = a.visitorid
+LEFT JOIN categories c
+	ON se.productsku = c.productsku
+ORDER BY visit_key
+
+CREATE TABLE analytics AS
+SELECT 
+	CONCAT(a.visitnumber,a.visitorid) visit_key,
+	a.sessionid,
+	a.visitorid,
+	a.visit_date,
+	a.channelgrouping,
+	a.socialengagementtype,
+	a.bounces,
+	a.units_sold,
+	a.unit_price,
+	a.revenue
+FROM clean_analytics a
+ORDER BY sessionid
+
+CREATE TABLE users AS
+SELECT DISTINCT
+	visit_key,
+	sessionid,
+	visitorid
+FROM analytics
+
+~~~~
+This is unwieldly, but the best I felt I could accomplish while preserving as much data as possible.
+
+I should note that I am not confident in this process and would love to revise additionally.
