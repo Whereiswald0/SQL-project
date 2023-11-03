@@ -12,24 +12,10 @@ The second risk has to do with both variation and imprecision within a column, m
 QA Process:
 Describe your QA process and include the SQL queries used to execute it.
 
-QA is required throughout the process of cleaning to ensure that destructive processes are avoided, thus a great deal of my writing in the cleaning_data section is relevant. Rather than reproducing that here, I'll just add a few notes about the avenues I avoided do to QA concerns.
+QA is required throughout the process of cleaning to ensure that destructive processes are avoided, thus a great deal of my writing in the cleaning_data section is relevant. Rather than reproducing that here, I'll just add a few notes about the avenues I avoided due to QA concerns.
 
-Perhaps the most frustrating thing, and something which highlights the need for rigorous QA, was trying to join product SKUs to orders. To begin:
+FIrstly when looking at the data from analytics and all_sessions we presume there to be some overlap because of the data in the data fields. We can check this as follows:
 
-~~~~sql
-SELECT DISTINCT visitorid
-FROM clean_analytics --120,018 results
-
-SELECT DISTINCT visitorid
-FROM clean_sessions --14,223 results
-
-SELECT DISTINCT sessionid
-FROM clean_analytics --148,642 results
-
-SELECT DISTINCT sessionid
-FROM clean_sessions --14,556 results
-~~~~
-We certainly expect there to be more visitids (here renamed 'sessionid') than fullvisitorids (here renamed 'visitorid'), so that isn't surprising, but the data taken from analytics contains many more of each, more than 8x as many. Given the overlapping dates for this data though, we should see what might happen if were we to try to join these two sources. 
 ~~~sql
 SELECT *
 FROM clean_analytics a
@@ -53,8 +39,7 @@ AND units_sold >0
 AND a.revenue>0 
 --13,356 where positive revenue is recorded
 ~~~
-
-This is already suggesting that there are holes in our data, but if we should proceed with trying to identify a primary key and join our data:
+This suggests that there are holes in our data, given the number of nulls produced by these queries. Moreover we can say that this holes are significant because the involve orders (rows which contain units sold and revenue totals). This was enough to give me cause to halt the creation of a table joining these two data sets, which was a major issue since certain information about orders was contained in one set and not the other. But, if we were able to identify a common primary key (perhaps a combination of visitid and fullvisitorid, we could make a bridge table and join them. 
 ~~~~sql
 SELECT 
 a.visitnumber,
@@ -65,9 +50,25 @@ JOIN clean_analytics a
 	ON se.sessionid = a.sessionid --48,827 results
 	AND se.visitorid = a.visitorid --47,702 results
 ~~~~
+The discrepency between joining on just the visitid (renamed sessionid here) and including the visitorid as a criteria suggests that this cannot join our two tables directly, since a common key would produce a good deal of nulls. I did end up setting up one, but at the state the data is in, it is not going to pull in the best results.
 
+The second tool of QA I used involved checking uniques, combining results into a temporary table and making sure the resulting table returned the expected number of rows.
 
-My notes are a bit sloppy, but the intent is clear, I think. While the volume of data present in the analytics csv is large, because at least some of it is missing from the data from all_sessions, joining it is a very dangerous thing. Especially when we are unsure of the collection methods and the future uses.
+~~~~sql
+SELECT DISTINCT productsku
+FROM products 	--returns 1092
 
-We can see from that that there to be more visitids (renamed 'sessionid') than fullvisitorids (renamed 'visitorid') in the original data, so that we might have some trouble joining them is obvious, however even matching orders in the analytics data to lines in the all_sessions data in order to attempt to locate SKUs for particular rows we find missing data, revenue totals that don't add up, and other absent details that would help this make sense.
+SELECT productsku, productname
+FROM products 	--returns 1092
 
+SELECT DISTINCT productsku
+FROM clean_sessions 	--returns 536
+
+SELECT DISTINCT p.productsku
+FROM products p
+FULL OUTER JOIN clean_sessions se
+	ON p.productsku = se.productsku		--returns 1093	
+~~~~
+This process shows that one additional SKU is contained in the data from all_sessions.
+
+This same process is then done for all tables containing productskus, ensuring that no data is lost in the process of joining these tables to create a list of products and their associated details.
