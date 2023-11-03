@@ -39,7 +39,7 @@ AND units_sold >0
 AND a.revenue>0 
 --13,356 where positive revenue is recorded
 ~~~
-This suggests that there are holes in our data, given the number of nulls produced by these queries. Moreover we can say that this holes are significant because the involve orders (rows which contain units sold and revenue totals). This was enough to give me cause to halt the creation of a table joining these two data sets, which was a major issue since certain information about orders was contained in one set and not the other. But, if we were able to identify a common primary key (perhaps a combination of visitid and fullvisitorid, we could make a bridge table and join them. 
+This suggests that there are holes in our data, given the number of nulls produced by these queries. Moreover we can say that these holes are significant because they involve orders (rows which contain units sold and revenue totals). This was enough to give me cause to halt the creation of a table joining these two data sets, which was a major issue since certain information about orders was contained in one set and not the other. But, if we were able to identify a common primary key (perhaps a combination of visitid and fullvisitorid, we could make a bridge table and join them. 
 ~~~~sql
 SELECT 
 a.visitnumber,
