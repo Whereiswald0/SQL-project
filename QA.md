@@ -12,11 +12,10 @@ The second risk has to do with both variation and imprecision within a column, m
 QA Process:
 Describe your QA process and include the SQL queries used to execute it.
 
-QA is required throughout the process of cleaning to ensure that destructive processes are avoided, thus a great deal of my writing in the cleaning_data section is relevant. 
+QA is required throughout the process of cleaning to ensure that destructive processes are avoided, thus a great deal of my writing in the cleaning_data section is relevant. Rather than reproducing that here, I'll just add a few notes about the avenues I avoided do to QA concerns.
 
-Some additional notes:
+Perhaps the most frustrating thing, and something which highlights the need for rigorous QA, was trying to join product SKUs to orders. To begin:
 
-For me this process involved the liberal use of temporary tables before committing to writing a new table, preserving existing data in archived sections so that old-queries could be re-run, and verifying that correct transformations have been done without losing information. This process is necessarily rigorous and an example is to start by just examining what we might take as primary keys
 ~~~~sql
 SELECT DISTINCT visitorid
 FROM clean_analytics --120,018 results
@@ -30,7 +29,30 @@ FROM clean_analytics --148,642 results
 SELECT DISTINCT sessionid
 FROM clean_sessions --14,556 results
 ~~~~
-We certainly expect there to be more visitids (here renamed 'sessionid') than fullvisitorids (here renamed 'visitorid'), so that isn't surprising, but the data taken from analytics contains many more of each, more than 8x as many. 
+We certainly expect there to be more visitids (here renamed 'sessionid') than fullvisitorids (here renamed 'visitorid'), so that isn't surprising, but the data taken from analytics contains many more of each, more than 8x as many. Given the overlapping dates for this data though, we should see what might happen if were we to try to join these two sources. 
+~~~sql
+SELECT *
+FROM clean_analytics a
+FULL OUTER JOIN clean_sessions se
+	ON a.visitorid = se.visitorid 
+WHERE se.visitorid IS NULL
+-- 1,656,058 rows produced IN analytics, MISSING from all_sessions
+AND units_sold >0
+--58,529 with units sold
+AND a.revenue>0 
+--12,934 where positive revenue is recorded
+
+SELECT *
+FROM clean_analytics a
+LEFT JOIN clean_sessions se
+	ON a.sessionid = se.sessionid 
+WHERE se.sessionid IS NULL
+--1,691,948 rows produced IN analytics, MISSING from all_sessions
+AND units_sold >0
+--60,501 produced with with units sold
+AND a.revenue>0 
+--13,356 where positive revenue is recorded
+~~~
 
 This is already suggesting that there are holes in our data, but if we should proceed with trying to identify a primary key and join our data:
 ~~~~sql
@@ -43,19 +65,9 @@ JOIN clean_analytics a
 	ON se.sessionid = a.sessionid --48,827 results
 	AND se.visitorid = a.visitorid --47,702 results
 ~~~~
-If after cleaning the all_sessions and analytics tables we simply joined them assuming that the sessionid  + visitorid would provide a link between the two datasets we could be destroying information particular to each table. Joining on just sessionid produces 48,827 results, while joining on both session and visitor ids produces 47,702. This indicates that some visitors and sessions are not recorded in one or the other tables and we must decide a course of action.
-
-Drilling down into this would be a longer process than I was able to accomplish, so I elected to maintain potentially overlapping tables and to remind myself that the data is incomplete and further action will be required.
 
 
-This same process when applied to the other suspected primary key in the data was much more successful.
-~~~~sql
-SELECT DISTINCT p.productsku, p.productname
-FROM products p
-FULL OUTER JOIN clean_sessions se
-	ON p.productsku = se.productsku
-	WHERE p.productsku IS NOT NULL	--produces 1093, 1 null
-~~~~
-This shows that all productskus in the products table are also present in the cleaned all_sessions data, bar one.
+My notes are a bit sloppy, but the intent is clear, I think. While the volume of data present in the analytics csv is large, because at least some of it is missing from the data from all_sessions, joining it is a very dangerous thing. Especially when we are unsure of the collection methods and the future uses.
 
-This missing sku was then found in the sales_by_sku table and appended along with the 7 other skus.
+We can see from that that there to be more visitids (renamed 'sessionid') than fullvisitorids (renamed 'visitorid') in the original data, so that we might have some trouble joining them is obvious, however even matching orders in the analytics data to lines in the all_sessions data in order to attempt to locate SKUs for particular rows we find missing data, revenue totals that don't add up, and other absent details that would help this make sense.
+
