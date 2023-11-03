@@ -9,7 +9,7 @@ Secondary goals include making note of key information which is missing and pres
   This stage involved opening the unprocessed CSVs to retrieve headers and deducing the datatypes based on initial values. To load the data an SQL query was written in PGAdmin, first to programmatically format the headers and then to create a table. In general, numerical data was imported as NUMERIC, while text data was imported as VARCHAR. Fields labelled ‘data’ or similar were imported as DATE types, while fields labeled ‘time’ were imported as INTEGERS to maintain ease of CASTing, in order to not preclude the possibility of those fields being easily formatted as INTERVAL or HH:MM:SS.
 
 ### Examining data as initially formatted
-  At this point, with all of the received data imported, the process of examining it in detail could begin by calling each column with aggregate functions. This is done to check for the number of unique values vs. duplicates, as well as to get an idea of the data ranges, number of NULL or ‘0’ values, and any outliers or completely empty columns.
+  At this point, with all of the received data imported, the process of examining it in detail could begin by calling each column with aggregate functions and DISTINCT to assess the number of uniques and their qualities, ranges and totals. This is done to check for the number of unique values vs. duplicates, as well as to get an idea of the missing data, number of NULL or ‘0’ values, and any outliers or completely empty columns.
 
 ### Formatting, CAST, identifying sets across tables
   Now we can move on to making some assumptions about that data set we have received and how we can begin making it more legible. This includes some preliminary analysis and test-casting from one datatype to another.
@@ -40,7 +40,9 @@ Secondary goals include making note of key information which is missing and pres
 
   As far as what could be said using this data, assuming it was all collected from a single merchant, they operate with a heavy emphasis on US-based customers, sell a variety of products, and have been tracking website traffic between August 2016 and August 2017, with an additional collection model applied from May to August of  2017. 
 
-  This data can indicated the frequency of orders with broad categories, but not with regards to specific products.
+  This data can indicated the frequency of orders with broad categories, but not with regards to specific products. 
+
+  A good deal of followup will be required.
 
 ## Challenges 
 (discuss challenges you faced in the project)
@@ -48,10 +50,11 @@ Secondary goals include making note of key information which is missing and pres
 
   As a result I proposed the use of a concatenated key derived from the visit_number (which counts each session per user) and the user id (generated as ‘fullvisitorid’). If maintained, this key would prove useful in aggregating a user’s activity over a whole session.
 
-  The other main challenge encountered was the vast amount of missing data which would all for the analysis of purchases and the ability to match purchases to products in inventory. Because SKUs not present in the analytics, the sales denoted there are difficult to untangle. Without SKUs the only data regarding purchases would often be units_sold and unit_price. This would then make it difficult to figure out if what was present in the data was a duplicate order or several different orders completed at the same time for products with identical prices. 
+  The other main challenge encountered was the vast amount of missing data which prevented  the analysis of purchase patterns and the ability to match purchases to products in inventory. Because SKUs not present in the analytics data, the sales denoted there are difficult to untangle. Without SKUs the only data regarding purchases would often be units_sold and unit_price. This would then make it difficult to figure out if what was present in the data was a duplicate order or several different orders completed at the same time for products with identical prices. 
+  
   This also resulted in a great deal of difficulty joining the sales data from the all_sessions csv and the analytics csv, since one couldn't be sure that the data didn't already exist in one or the other table, and given the missing and duplicated information even appealing to the appearance of a positive integer in the revenue column couldn't be taken as a sign that there wasn't missing data, since often the revenue total would not be the same as the quantity multiplied by price.
 
-  The only other thing of note which might be called a challenge was the inconsistent product categories, which often feature extraneous and duplicated information within a single string. I attempted to edit these strings with a regex function, but ended up just running a cascade of REPLACE and TRIM functions through a series of temporary tables in order to tidy them.
+  The only other thing of note which might be called a challenge was the inconsistent naming schemes, especially with regard to product categories, which often feature extraneous and duplicated information within a single string. I attempted to edit these strings with a regex function, but ended up just running a cascade of REPLACE and TRIM functions through a series of temporary tables in order to tidy them.
 
 ## Future Goals
   The only thing that comes to mind immediately is to further divide the data into those orders which can be definitively matched with SKUs, by matching visitid, fullvisitorid and price. An initial attempt at this only established a handful results, with some of those possibly being in error or duplicates.
