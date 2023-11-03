@@ -55,18 +55,11 @@ Question 2: When vistors return, are they more likely to make a purchase?
 
 SQL Queries:
 ~~~sql
-CREATE VIEW se AS  --pulls unique sessionid where a sale of some kind was made
-(
-SELECT DISTINCT sessionid
+SELECT visitnumber, COUNT(DISTINCT sessionid) 
 FROM analytics
-WHERE units_sold>0
-)
-
-SELECT DISTINCT a.visitnumber, COUNT(se.sessionid) --associates the particular visitnumber with each of those unique session ids, 
-FROM se							--then counts how many of those sessions were under which visitnumber
-LEFT JOIN analytics a
-	ON se.sessionid = a.sessionid 
-GROUP BY a.visitnumber
+WHERE units_sold > 0
+GROUP BY visitnumber
+ORDER BY visitnumber
 ~~~
 Answer:
 
@@ -74,20 +67,30 @@ Sales mostly occur on the first visit, and then fall off, down to double digits 
 While this data is only stretching across a single year, working on retaining and building repeat customers should certainly be a goal.
 
 
-Question 3: Are frequent visitors better customers?
+Question 3: 
+Are sales coming from many users making small purchases or fewer users making large purchases?
 
 SQL Queries:
 ~~~~sql
-SELECT DISTINCT 
-	a.visitorid,
-	MAX(a.visitnumber)high_visit,
-	MAX(a.visit_date) high_date
-FROM clean_analytics a
-GROUP BY a.visitorid
-ORDER BY high_visit DESC
+WITH order_temp AS ( 	
+SELECT 
+	visitorid,
+	(CASE WHEN order_amt < 100 THEN '0-99'
+	WHEN order_amt <=300 then '100-300'
+	WHEN order_amt <=500 THEN '301-500'
+	WHEN order_amt > 500 THEN '500+' END) order_vol
+FROM sales_by_user
+ORDER BY order_vol)
+SELECT order_vol, COUNT(visitorid)
+FROM order_temp
+GROUP BY order_vol
 ~~~~
 Answer:
-
+"0-99"		8841
+"100-300"	3252
+"301-500"	1056
+"500+"		2914
+Most users have purchased under $100 worth of goods over the course of the year.
 
 
 Question 4: 
