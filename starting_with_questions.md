@@ -7,7 +7,7 @@ Answer the following questions and provide the SQL queries used to find the answ
 SQL Queries:
 
 MANY ASSUMPTIONS
-First, if we assume that over the course of a year a particular user will no move cities, and that their orders will always count for the city they are logging in from when no shipping information is provided, then we can join the information from analytics (which contains no city information) with the city and country data from the all_sessions csv. Because I have elected to keep these two information sources mostly separate, following this assumption would require several steps.
+First, if we assume that over the course of a year a particular user will not move cities, and that their orders will always count for the city they are logging in from when no shipping information is provided, then we can join the information from analytics (which contains no city information) with the city and country data from the all_sessions csv. Because I have elected to keep these two information sources mostly separate, following this assumption would require several steps.
 
 ~~~~SQL
 --create a view, perhaps out of paranoia, to ensure that duplicates are not generated joining
@@ -36,7 +36,7 @@ GROUP BY se.city
 ORDER BY total_sold DESC
 --LIMIT 1 --if you only want the top result, question unclear.
 
---this operation can be checked by running the data from both tables seperately, which does work.
+--this operation can be checked by running the data from both tables separately, which does work.
 ~~~~
 
 BUT if that isn’t true, and we should instead be relying on the columns ‘transaction_revenue’ and ‘revenue’ in the original data being the most correct, then we would write:
@@ -86,8 +86,8 @@ Countries
 
 SQL Queries: 
 Similar assumptions must be made about the quality of the data and what should be trusted/ignored.
-The questions is also ambigous to me:
-    Are we averaging the QUANTITY of products, or the NUMBER of individual products. The number of individual products is difficult, since order from the original analytics CSV do not have SKUs.
+The questions is also ambiguous to me:
+    Are we averaging the QUANTITY of products, or the NUMBER of individual products. The number of individual products is difficult, since orders from the original analytics CSV do not have SKUs.
     
 Again, using the same queries, but slightly modified, and making assumptions as above:
 ~~~~SQL
@@ -274,9 +274,3 @@ Answer:
 Any number of things could be shown by this data, without further context we would only be guessing.
 
 Data without context can tell us only so much.
-
-
-
-
-
-
